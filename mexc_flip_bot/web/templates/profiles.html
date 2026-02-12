@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profiles — MEXC Flip Bot</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f5f6f8; }
+      .panel { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 14px; }
+      nav a { margin-right: 12px; }
+      .msg { background: #fff5cc; border: 1px solid #f0db7d; padding: 10px; border-radius: 6px; margin-top: 12px; margin-bottom: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; border-bottom: 1px solid #ddd; padding: 8px; }
+      .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      button { padding: 6px 10px; border: 1px solid #bbb; border-radius: 6px; cursor: pointer; background: #fff; }
+      .active { color: #2b7; font-weight: bold; }
+      .create-row { display: flex; gap: 10px; align-items: center; }
+      input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Profiles</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/trades">Trades</a>
+      <a href="/orders">Orders</a>
+    </nav>
+
+    {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+    <div class="panel">
+      <h3>Active profile: <span class="active">{{ active_profile.name if active_profile else 'N/A' }}</span></h3>
+      <form method="post" action="/profiles/create" class="create-row">
+        <label for="name">New profile name</label>
+        <input id="name" name="name" type="text" required />
+        <button type="submit">Create</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>name</th>
+            <th>updated_at</th>
+            <th>mode</th>
+            <th>entry_type</th>
+            <th>leverage</th>
+            <th>usdt_amount</th>
+            <th>tp/sl</th>
+            <th>actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for profile in profiles %}
+          <tr>
+            <td>{% if profile.is_active %}<span class="active">●</span> {% endif %}{{ profile.name }}</td>
+            <td>{{ profile.updated_at }}</td>
+            <td>{{ profile.mode }}</td>
+            <td>{{ profile.entry_type }}</td>
+            <td>{{ profile.leverage }}</td>
+            <td>{{ profile.usdt_amount }}</td>
+            <td>{{ profile.tp_percent }} / {{ profile.sl_percent }}</td>
+            <td>
+              <div class="actions">
+                <form method="post" action="/profiles/activate/{{ profile.id }}"><button type="submit">Activate</button></form>
+                <form method="post" action="/profiles/duplicate/{{ profile.id }}"><button type="submit">Duplicate</button></form>
+                <form method="post" action="/profiles/delete/{{ profile.id }}" onsubmit="return confirm('Delete profile?')"><button type="submit">Delete</button></form>
+                <form method="get" action="/settings"><input type="hidden" name="profile_id" value="{{ profile.id }}" /><button type="submit">Edit</button></form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

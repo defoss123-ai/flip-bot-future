@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trades — MEXC Flip Bot</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f5f6f8; }
+      table { width: 100%; border-collapse: collapse; background: white; }
+      th, td { border: 1px solid #e1e4ea; padding: 8px; text-align: left; font-size: 13px; }
+      th { background: #f0f2f7; }
+      nav a { margin-right: 12px; }
+      form { margin: 0; }
+      button { padding: 6px 10px; }
+      .msg { background: #fff5cc; border: 1px solid #f0db7d; padding: 10px; border-radius: 6px; margin-top: 12px; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Trades (last 200)</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/trades">Trades</a>
+      <a href="/orders">Orders</a>
+    </nav>
+
+    {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>created_at</th><th>symbol</th><th>direction</th><th>usdt</th><th>lev</th>
+          <th>entry</th><th>exit</th><th>tp</th><th>sl</th><th>pnl</th><th>status</th><th>close_reason</th><th>action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in trades %}
+        <tr>
+          <td>{{ row.id }}</td>
+          <td>{{ row.created_at }}</td>
+          <td>{{ row.symbol }}</td>
+          <td>{{ row.direction }}</td>
+          <td>{{ row.usdt_amount }}</td>
+          <td>{{ row.leverage }}</td>
+          <td>{{ row.entry_price if row.entry_price is not none else '-' }}</td>
+          <td>{{ row.exit_price if row.exit_price is not none else '-' }}</td>
+          <td>{{ row.tp_price if row.tp_price is not none else '-' }}</td>
+          <td>{{ row.sl_price if row.sl_price is not none else '-' }}</td>
+          <td>{{ row.pnl_usdt if row.pnl_usdt is not none else '-' }}</td>
+          <td>{{ row.status }}</td>
+          <td>{{ row.close_reason if row.close_reason else '-' }}</td>
+          <td>
+            <form method="post" action="/trades/{{ row.id }}/close">
+              <button type="submit">Close now</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="14">No trades yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
