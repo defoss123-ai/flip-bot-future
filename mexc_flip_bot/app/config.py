@@ -80,6 +80,8 @@ class StrategyConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     mode: str = Field(default="conservative", pattern=r"^(conservative|aggressive)$")
+    auto_revert_enabled: bool = False
+    auto_revert_minutes: int = Field(default=0, ge=0)
     conservative: StrategyProfile = Field(
         default_factory=lambda: StrategyProfile(
             min_confidence=65,
