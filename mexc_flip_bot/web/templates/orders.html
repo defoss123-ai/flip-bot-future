@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders — MEXC Flip Bot</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f5f6f8; }
+      table { width: 100%; border-collapse: collapse; background: white; }
+      th, td { border: 1px solid #e1e4ea; padding: 8px; text-align: left; font-size: 13px; }
+      th { background: #f0f2f7; }
+      nav a { margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Orders (last 200)</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/trades">Trades</a>
+      <a href="/orders">Orders</a>
+    </nav>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>created_at</th><th>symbol</th><th>side</th><th>type</th><th>price</th>
+          <th>qty</th><th>status</th><th>exchange_order_id</th><th>reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in orders %}
+        <tr>
+          <td>{{ row.id }}</td>
+          <td>{{ row.created_at }}</td>
+          <td>{{ row.symbol }}</td>
+          <td>{{ row.side }}</td>
+          <td>{{ row.type }}</td>
+          <td>{{ row.price if row.price is not none else '-' }}</td>
+          <td>{{ row.qty }}</td>
+          <td>{{ row.status }}</td>
+          <td>{{ row.exchange_order_id if row.exchange_order_id else '-' }}</td>
+          <td>{{ row.reason if row.reason else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10">No orders yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>

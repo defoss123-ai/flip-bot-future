@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — MEXC Flip Bot</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f5f6f8; color: #222; }
+      .top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .badge { padding: 8px 12px; border-radius: 6px; font-weight: bold; }
+      .running { background: #d7f8df; color: #0f6b2c; }
+      .stopped { background: #fddede; color: #8c1d1d; }
+      .mode { background: #dde8ff; color: #1f3f8a; }
+      .panel { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-top: 14px; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+      .card { background: #fff; border: 1px solid #e4e7ee; border-radius: 8px; padding: 12px; }
+      .card .name { color: #777; font-size: 13px; }
+      .card .value { font-size: 20px; font-weight: bold; margin-top: 4px; }
+      nav a { margin-right: 12px; }
+      form { display: inline; }
+      button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; }
+      .panic-btn { background: #c62828; color: white; border-color: #8e0000; font-weight: bold; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      th, td { border: 1px solid #e1e4ea; padding: 8px; text-align: left; font-size: 13px; }
+      th { background: #f0f2f7; }
+      .msg { background: #fff5cc; border: 1px solid #f0db7d; padding: 10px; border-radius: 6px; margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>MEXC Flip Bot Dashboard</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/trades">Trades</a>
+      <a href="/orders">Orders</a>
+    </nav>
+
+    {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+    <div class="panel top">
+      <span class="badge {{ 'running' if state.running else 'stopped' }}">
+        {{ 'RUNNING' if state.running else 'STOPPED' }}
+      </span>
+      <span class="badge mode">MODE: {{ runtime.mode }}</span>
+      <span>max_positions: <b>{{ runtime.trading.max_positions }}</b></span>
+      <span>cooldown: <b>{{ runtime.trading.cooldown_sec }} sec</b></span>
+      {% if state.recovered %}<span><b>Recovery complete</b></span>{% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="cards">
+        <div class="card"><div class="name">pnl_day</div><div class="value"><span id="pnl-day">{{ stats.pnl_day }}</span></div></div>
+        <div class="card"><div class="name">pnl_week</div><div class="value"><span id="pnl-week">{{ stats.pnl_week }}</span></div></div>
+        <div class="card"><div class="name">pnl_month</div><div class="value"><span id="pnl-month">{{ stats.pnl_month }}</span></div></div>
+        <div class="card"><div class="name">winrate</div><div class="value"><span id="winrate">{{ stats.winrate }}</span>%</div></div>
+        <div class="card"><div class="name">total_trades</div><div class="value"><span id="total-trades">{{ stats.total_trades }}</span></div></div>
+      </div>
+    </div>
+
+
+    <div class="panel">
+      <h3>System Health</h3>
+      <div class="top">
+        <span>API: <b id="health-api">{{ health.api }}</b></span>
+        <span>TELEGRAM: <b id="health-telegram">{{ health.telegram }}</b></span>
+        <span>DB: <b id="health-db">{{ health.db }}</b></span>
+        <span>ENTRIES: <b id="health-entries">{{ health.entries }}</b></span>
+        <span>API errors in row: <b id="health-api-errors">{{ health.api_consecutive_errors }}</b></span>
+        <span>open_positions: <b id="open-positions">{{ open_positions }}</b></span>
+        <span>total_exposure: <b id="total-exposure">{{ total_exposure }}</b></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Strategy & Safety</h3>
+      <div class="top">
+        <span>strategy_mode: <b>{{ effective.strategy_mode }}</b></span>
+        <span>Auto revert in: <b>{{ revert_countdown if revert_countdown else '-' }}</b></span>
+        <span>loss_streak_guard_until: <b>{{ safety.loss_streak_guard_until if safety.loss_streak_guard_until else '-' }}</b></span>
+        <span>api_error_guard_until: <b>{{ safety.api_error_guard_until if safety.api_error_guard_until else '-' }}</b></span>
+      </div>
+    </div>
+
+
+    <div class="panel">
+      <h3>Active Profile</h3>
+      <div class="top">
+        <span>name: <b>{{ active_profile_name }}</b></span>
+        <span>mode: <b>{{ active_profile_summary.mode }}</b></span>
+        <span>entry_type: <b>{{ active_profile_summary.entry_type }}</b></span>
+        <span>leverage: <b>{{ active_profile_summary.leverage }}</b></span>
+        <span>usdt_amount: <b>{{ active_profile_summary.usdt_amount }}</b></span>
+        <span>tp/sl: <b>{{ active_profile_summary.tp_percent }} / {{ active_profile_summary.sl_percent }}</b></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Equity Curve</h3>
+      <div class="top" style="margin-bottom: 10px;">
+        <button type="button" data-range="day" class="equity-range-btn">Day</button>
+        <button type="button" data-range="week" class="equity-range-btn">Week</button>
+        <button type="button" data-range="month" class="equity-range-btn">Month</button>
+        <button type="button" data-range="all" class="equity-range-btn">All</button>
+      </div>
+      <canvas id="equity-chart" height="90"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3>Текущие параметры входа</h3>
+      <div class="top">
+        <span>mode: <b>{{ app_config.mode }}</b></span>
+        <span>entry_type: <b>{{ app_config.trading.default_entry_type }}</b></span>
+        <span>entry_timeout_sec: <b>{{ app_config.orders.entry_timeout_sec }}</b></span>
+        <span>retry_mode: <b>{{ app_config.orders.retry_mode }}</b></span>
+        <span>leverage: <b>{{ app_config.trading.leverage }}</b></span>
+        <span>usdt_amount: <b>{{ app_config.trading.usdt_amount }}</b></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Последние сигналы</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>symbol</th><th>spread</th><th>liquidity</th><th>align_age</th><th>direction</th><th>status</th></tr>
+        </thead>
+        <tbody>
+          {% for s in signals %}
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ s.symbol if s.symbol else '-' }}</td>
+            <td>{{ s.spread_percent if s.spread_percent is not none else '-' }}</td>
+            <td>{{ s.liquidity_usd if s.liquidity_usd is not none else '-' }}</td>
+            <td>{{ s.align_age_sec if s.align_age_sec is not none else '-' }}</td>
+            <td>{{ s.direction if s.direction else '-' }}</td>
+            <td>{{ s.status }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7">No signals yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Bot control</h3>
+      <form method="post" action="/bot/start"><button type="submit">Start</button></form>
+      <form method="post" action="/bot/stop"><button type="submit">Stop</button></form>
+      <form method="post" action="/bot/paper"><button type="submit">Paper</button></form>
+      <form method="post" action="/bot/live"><button type="submit">Live</button></form>
+      <form method="post" action="/bot/panic"><button class="panic-btn" type="submit">PANIC CLOSE ALL</button></form>
+    </div>
+  
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      (() => {
+        const setText = (id, value) => {
+          const el = document.getElementById(id);
+          if (el && value !== undefined && value !== null) el.textContent = String(value);
+        };
+
+        const applyPayload = (payload) => {
+          setText('pnl-day', payload.pnl_day);
+          setText('pnl-week', payload.pnl_week);
+          setText('pnl-month', payload.pnl_month);
+          setText('total-trades', payload.total_trades);
+          setText('winrate', payload.winrate);
+          setText('open-positions', payload.open_positions);
+          setText('total-exposure', payload.total_exposure);
+
+          const h = payload.system_health || {};
+          setText('health-api', h.api);
+          setText('health-telegram', h.telegram);
+          setText('health-db', h.db);
+          setText('health-entries', h.entries);
+          setText('health-api-errors', h.api_consecutive_errors);
+        };
+
+        let socket = null;
+        const connect = () => {
+          const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          socket = new WebSocket(`${proto}//${window.location.host}/ws/dashboard`);
+
+          socket.onmessage = (event) => {
+            try {
+              applyPayload(JSON.parse(event.data));
+            } catch (e) {
+              console.error('WS parse error', e);
+            }
+          };
+
+          socket.onclose = () => {
+            setTimeout(connect, 3000);
+          };
+
+          socket.onerror = (e) => {
+            console.error('WS error', e);
+            try { socket.close(); } catch (_) {}
+          };
+        };
+
+        const equityCanvas = document.getElementById('equity-chart');
+        const equityCtx = equityCanvas.getContext('2d');
+        let equityRange = 'all';
+        let equityChart = new Chart(equityCtx, {
+          type: 'line',
+          data: { labels: [], datasets: [{ label: 'Equity', data: [], borderColor: '#1f3f8a', tension: 0.2, fill: false, pointRadius: 0 }] },
+          options: { responsive: true, animation: false, maintainAspectRatio: true, scales: { x: { ticks: { maxTicksLimit: 8 } } } },
+        });
+
+        const updateEquity = async () => {
+          try {
+            const response = await fetch(`/api/equity?range=${encodeURIComponent(equityRange)}`);
+            if (!response.ok) return;
+            const points = await response.json();
+            const labels = points.map((p) => new Date(p.timestamp).toLocaleString());
+            const values = points.map((p) => Number(p.equity || 0));
+            equityChart.data.labels = labels;
+            equityChart.data.datasets[0].data = values;
+            equityChart.update('none');
+          } catch (e) {
+            console.error('Equity fetch error', e);
+          }
+        };
+
+        document.querySelectorAll('.equity-range-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            equityRange = btn.dataset.range || 'all';
+            updateEquity();
+          });
+        });
+
+        connect();
+        updateEquity();
+        setInterval(updateEquity, 5000);
+      })();
+    </script>
+
+  </body>
+</html>

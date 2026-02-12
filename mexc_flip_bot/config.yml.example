@@ -1,0 +1,70 @@
+mode: paper
+
+mexc:
+  api_key: your_api_key
+  api_secret: your_api_secret
+
+trading:
+  usdt_amount: 50
+  leverage: 5
+  max_positions: 2
+  cooldown_sec: 30
+  default_entry_type: market
+  leverage_mode: fixed
+  max_leverage: 25
+
+orders:
+  entry_timeout_sec: 10
+  retry_mode: cancel
+
+risk:
+  tp_percent: 1.2
+  sl_percent: 0.8
+  max_total_exposure_usdt: 1000
+  max_funding_rate_percent: 0.5
+  spread_anomaly_multiplier: 3
+
+filters:
+  min_spread_percent: 0.15
+  min_liquidity_usd: 100000
+  max_align_age_sec: 20
+
+strategy:
+  mode: conservative
+  conservative:
+    min_confidence: 65
+    tp_percent: 0.35
+    sl_percent: 0.25
+    cooldown_sec: 90
+    max_positions: 2
+    entry_type: limit
+    entry_timeout_sec: 60
+    retry_mode: cancel_then_relimit
+    leverage_mode: adaptive
+    max_leverage: 12
+    filters:
+      min_spread_percent: 0.8
+      min_liquidity_usd: 60000
+      max_align_age_sec: 15
+  aggressive:
+    min_confidence: 50
+    tp_percent: 0.20
+    sl_percent: 0.35
+    cooldown_sec: 15
+    max_positions: 5
+    entry_type: market
+    entry_timeout_sec: 20
+    retry_mode: cancel_then_market
+    leverage_mode: adaptive
+    max_leverage: 25
+    filters:
+      min_spread_percent: 0.5
+      min_liquidity_usd: 25000
+      max_align_age_sec: 30
+
+telegram:
+  use_telethon: true
+  api_id: 123456
+  api_hash: your_api_hash
+  session_name: mexc_flip_bot
+  source_chat: some_channel_or_chat

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings — MEXC Flip Bot</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f5f6f8; }
+      .panel { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 14px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+      label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+      input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+      nav a { margin-right: 12px; }
+      .actions { display: flex; gap: 10px; margin-top: 14px; }
+      button { padding: 10px 14px; border-radius: 6px; border: 1px solid #bbb; cursor: pointer; }
+      button.reset { background: #ffeaea; border-color: #d99; }
+      .msg { background: #fff5cc; border: 1px solid #f0db7d; padding: 10px; border-radius: 6px; margin-top: 12px; margin-bottom: 12px; }
+      .hint { color: #666; font-size: 12px; margin-top: 2px; }
+      h3 { margin-top: 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Settings</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/profiles">Profiles</a>
+      <a href="/trades">Trades</a>
+      <a href="/orders">Orders</a>
+    </nav>
+
+    {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+    <div class="panel">
+      <h3>Effective summary ({{ effective.strategy_mode }})</h3>
+      <div class="grid">
+        <div>entry_type: <b>{{ effective.entry_type }}</b></div>
+        <div>timeout: <b>{{ effective.entry_timeout_sec }}</b></div>
+        <div>retry_mode: <b>{{ effective.retry_mode }}</b></div>
+        <div>tp/sl: <b>{{ effective.tp_percent }} / {{ effective.sl_percent }}</b></div>
+        <div>max_positions: <b>{{ effective.max_positions }}</b></div>
+        <div>cooldown: <b>{{ effective.cooldown_sec }}</b></div>
+        <div>min_confidence: <b>{{ effective.min_confidence }}</b></div>
+        <div>max_leverage: <b>{{ effective.max_leverage }}</b></div>
+        <div>min_spread: <b>{{ effective.min_spread_percent }}</b></div>
+        <div>min_liquidity: <b>{{ effective.min_liquidity_usd }}</b></div>
+        <div>max_align: <b>{{ effective.max_align_age_sec }}</b></div>
+      </div>
+    </div>
+
+    <form method="post" action="/settings" class="panel">
+      <h3>Base runtime settings</h3>
+      <div class="grid">
+        <div><label>mode</label><select name="mode">{% for item in modes %}<option value="{{ item }}" {% if runtime.mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>strategy_mode</label><select name="strategy_mode">{% for item in strategy_modes %}<option value="{{ item }}" {% if runtime.strategy.mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+
+        <div>
+          <label><input type="checkbox" name="auto_revert_enabled" value="true" {% if runtime.strategy.auto_revert_enabled %}checked{% endif %} /> auto_revert_enabled</label>
+        </div>
+        <div><label>auto_revert_minutes</label><input type="number" min="1" max="240" name="auto_revert_minutes" value="{{ runtime.strategy.auto_revert_minutes }}" required /></div>
+        <div><label>usdt_amount</label><input type="number" step="0.01" min="0.01" name="usdt_amount" value="{{ runtime.trading.usdt_amount }}" required /></div>
+        <div><label>leverage</label><input type="number" min="1" max="200" name="leverage" value="{{ runtime.trading.leverage }}" required /></div>
+        <div><label>max_positions</label><input type="number" min="1" name="max_positions" value="{{ runtime.trading.max_positions }}" required /></div>
+        <div><label>cooldown_sec</label><input type="number" min="0" name="cooldown_sec" value="{{ runtime.trading.cooldown_sec }}" required /></div>
+        <div><label>default_entry_type</label><select name="default_entry_type">{% for item in entry_types %}<option value="{{ item }}" {% if runtime.trading.default_entry_type == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>leverage_mode</label><select name="leverage_mode">{% for item in leverage_modes %}<option value="{{ item }}" {% if runtime.trading.leverage_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>max_leverage</label><input type="number" min="1" name="max_leverage" value="{{ runtime.trading.max_leverage }}" required /></div>
+        <div><label>entry_timeout_sec</label><input type="number" min="5" max="600" name="entry_timeout_sec" value="{{ runtime.orders.entry_timeout_sec }}" required /><div class="hint">Для market игнорируется при входе, но сохраняется.</div></div>
+        <div><label>retry_mode</label><select name="retry_mode">{% for item in retry_modes %}<option value="{{ item }}" {% if runtime.orders.retry_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>tp_percent</label><input type="number" step="0.01" min="0.01" name="tp_percent" value="{{ runtime.risk.tp_percent }}" required /></div>
+        <div><label>sl_percent</label><input type="number" step="0.01" min="0.01" name="sl_percent" value="{{ runtime.risk.sl_percent }}" required /></div>
+        <div><label>max_total_exposure_usdt</label><input type="number" step="0.01" min="0.01" name="max_total_exposure_usdt" value="{{ runtime.risk.max_total_exposure_usdt }}" required /></div>
+        <div><label>max_funding_rate_percent</label><input type="number" step="0.01" min="0" name="max_funding_rate_percent" value="{{ runtime.risk.max_funding_rate_percent }}" required /></div>
+        <div><label>spread_anomaly_multiplier</label><input type="number" step="0.1" min="0.1" name="spread_anomaly_multiplier" value="{{ runtime.risk.spread_anomaly_multiplier }}" required /></div>
+        <div><label>min_spread_percent</label><input type="number" step="0.01" min="0" name="min_spread_percent" value="{{ runtime.filters.min_spread_percent }}" required /></div>
+        <div><label>min_liquidity_usd</label><input type="number" step="0.01" min="0" name="min_liquidity_usd" value="{{ runtime.filters.min_liquidity_usd }}" required /></div>
+        <div><label>max_align_age_sec</label><input type="number" min="0" name="max_align_age_sec" value="{{ runtime.filters.max_align_age_sec }}" required /></div>
+      </div>
+
+      <h3>Conservative profile</h3>
+      <div class="grid">
+        <div><label>min_confidence</label><input type="number" min="0" max="100" name="conservative_min_confidence" value="{{ runtime.strategy.conservative.min_confidence }}" required /></div>
+        <div><label>tp_percent</label><input type="number" step="0.01" min="0.01" name="conservative_tp_percent" value="{{ runtime.strategy.conservative.tp_percent }}" required /></div>
+        <div><label>sl_percent</label><input type="number" step="0.01" min="0.01" name="conservative_sl_percent" value="{{ runtime.strategy.conservative.sl_percent }}" required /></div>
+        <div><label>cooldown_sec</label><input type="number" min="0" name="conservative_cooldown_sec" value="{{ runtime.strategy.conservative.cooldown_sec }}" required /></div>
+        <div><label>max_positions</label><input type="number" min="1" name="conservative_max_positions" value="{{ runtime.strategy.conservative.max_positions }}" required /></div>
+        <div><label>entry_type</label><select name="conservative_entry_type">{% for item in entry_types %}<option value="{{ item }}" {% if runtime.strategy.conservative.entry_type == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>entry_timeout_sec</label><input type="number" min="1" name="conservative_entry_timeout_sec" value="{{ runtime.strategy.conservative.entry_timeout_sec }}" required /></div>
+        <div><label>retry_mode</label><select name="conservative_retry_mode">{% for item in retry_modes %}<option value="{{ item }}" {% if runtime.strategy.conservative.retry_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>leverage_mode</label><select name="conservative_leverage_mode">{% for item in leverage_modes %}<option value="{{ item }}" {% if runtime.strategy.conservative.leverage_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>max_leverage</label><input type="number" min="1" name="conservative_max_leverage" value="{{ runtime.strategy.conservative.max_leverage }}" required /></div>
+        <div><label>min_spread_percent</label><input type="number" step="0.01" min="0" name="conservative_min_spread_percent" value="{{ runtime.strategy.conservative.filters.min_spread_percent }}" required /></div>
+        <div><label>min_liquidity_usd</label><input type="number" step="0.01" min="0" name="conservative_min_liquidity_usd" value="{{ runtime.strategy.conservative.filters.min_liquidity_usd }}" required /></div>
+        <div><label>max_align_age_sec</label><input type="number" min="0" name="conservative_max_align_age_sec" value="{{ runtime.strategy.conservative.filters.max_align_age_sec }}" required /></div>
+      </div>
+
+      <h3>Aggressive profile</h3>
+      <div class="grid">
+        <div><label>min_confidence</label><input type="number" min="0" max="100" name="aggressive_min_confidence" value="{{ runtime.strategy.aggressive.min_confidence }}" required /></div>
+        <div><label>tp_percent</label><input type="number" step="0.01" min="0.01" name="aggressive_tp_percent" value="{{ runtime.strategy.aggressive.tp_percent }}" required /></div>
+        <div><label>sl_percent</label><input type="number" step="0.01" min="0.01" name="aggressive_sl_percent" value="{{ runtime.strategy.aggressive.sl_percent }}" required /></div>
+        <div><label>cooldown_sec</label><input type="number" min="0" name="aggressive_cooldown_sec" value="{{ runtime.strategy.aggressive.cooldown_sec }}" required /></div>
+        <div><label>max_positions</label><input type="number" min="1" name="aggressive_max_positions" value="{{ runtime.strategy.aggressive.max_positions }}" required /></div>
+        <div><label>entry_type</label><select name="aggressive_entry_type">{% for item in entry_types %}<option value="{{ item }}" {% if runtime.strategy.aggressive.entry_type == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>entry_timeout_sec</label><input type="number" min="1" name="aggressive_entry_timeout_sec" value="{{ runtime.strategy.aggressive.entry_timeout_sec }}" required /></div>
+        <div><label>retry_mode</label><select name="aggressive_retry_mode">{% for item in retry_modes %}<option value="{{ item }}" {% if runtime.strategy.aggressive.retry_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>leverage_mode</label><select name="aggressive_leverage_mode">{% for item in leverage_modes %}<option value="{{ item }}" {% if runtime.strategy.aggressive.leverage_mode == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+        <div><label>max_leverage</label><input type="number" min="1" name="aggressive_max_leverage" value="{{ runtime.strategy.aggressive.max_leverage }}" required /></div>
+        <div><label>min_spread_percent</label><input type="number" step="0.01" min="0" name="aggressive_min_spread_percent" value="{{ runtime.strategy.aggressive.filters.min_spread_percent }}" required /></div>
+        <div><label>min_liquidity_usd</label><input type="number" step="0.01" min="0" name="aggressive_min_liquidity_usd" value="{{ runtime.strategy.aggressive.filters.min_liquidity_usd }}" required /></div>
+        <div><label>max_align_age_sec</label><input type="number" min="0" name="aggressive_max_align_age_sec" value="{{ runtime.strategy.aggressive.filters.max_align_age_sec }}" required /></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Сохранить</button>
+      </div>
+    </form>
+
+    <form method="post" action="/settings/reset" class="panel" onsubmit="return confirm('Точно сбросить?')">
+      <button type="submit" class="reset">Сбросить</button>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+pyyaml
+loguru
+sqlalchemy
+aiosqlite
+jinja2
+python-multipart
+telethon
